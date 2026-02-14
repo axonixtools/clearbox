@@ -35,7 +35,7 @@ function SectionHeader({ eyebrow, title, description }: SectionHeaderProps) {
 }
 
 export function LandingPage() {
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme } = useTheme();
   const { status } = useSession();
   const router = useRouter();
 
@@ -73,9 +73,10 @@ export function LandingPage() {
             <button
               onClick={toggleTheme}
               className={styles.themeToggle}
-              aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              aria-label="Toggle color mode"
             >
-              {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              <Moon className={styles.themeIconLight} />
+              <Sun className={styles.themeIconDark} />
             </button>
             <button onClick={startCleanup} className={`${styles.navCta} btn btn-primary`}>
               Start cleanup

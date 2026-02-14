@@ -8,7 +8,7 @@ import styles from "./landing-redesign.module.css";
 
 export function Navbar() {
   const { data: session } = useSession();
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme } = useTheme();
 
   const handleSignOut = async () => {
     if (typeof window !== "undefined") {
@@ -31,13 +31,10 @@ export function Navbar() {
           <button
             onClick={toggleTheme}
             className={styles.themeToggle}
-            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            aria-label="Toggle color mode"
           >
-            {theme === "light" ? (
-              <Moon className="mx-auto h-4 w-4" />
-            ) : (
-              <Sun className="mx-auto h-4 w-4" />
-            )}
+            <Moon className={styles.themeIconLight} />
+            <Sun className={styles.themeIconDark} />
           </button>
 
           {session ? (

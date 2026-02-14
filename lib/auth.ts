@@ -7,6 +7,8 @@ type GoogleTokenRefreshResponse = {
   refresh_token?: string;
 };
 
+const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+
 async function refreshGoogleAccessToken(refreshToken: string) {
   const tokenUrl = "https://oauth2.googleapis.com/token";
   const response = await fetch(tokenUrl, {
@@ -30,6 +32,8 @@ async function refreshGoogleAccessToken(refreshToken: string) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: authSecret,
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,

@@ -8,7 +8,7 @@ It scans unread Gmail metadata, groups messages into actionable categories, adds
 - Fast triage for large unread inboxes
 - Batch actions instead of one-by-one cleanup
 - Privacy-first session workflow
-- Finance-focused grouping by provider (ABL, UBL, NayaPay, etc.)
+- Finance-focused grouping by provider
 - Built-in dark mode and responsive UI
 
 ## Core Features
@@ -66,6 +66,7 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 
 # Auth.js
+AUTH_SECRET=
 NEXTAUTH_SECRET=
 NEXTAUTH_URL=http://localhost:3000
 

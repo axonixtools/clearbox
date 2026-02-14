@@ -28,24 +28,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const stored = localStorage.getItem("clearbox-theme") as Theme | null;
     if (stored === "dark" || stored === "light") {
-      applyTheme(stored);
       return stored;
     }
 
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initial = prefersDark ? "dark" : "light";
-    applyTheme(initial);
-    return initial;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
 
   useEffect(() => {
     applyTheme(theme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("clearbox-theme", theme);
+    }
   }, [theme]);
 
   const toggleTheme = () => {
-    const next = theme === "light" ? "dark" : "light";
-    setTheme(next);
-    localStorage.setItem("clearbox-theme", next);
+    setTheme((current) => (current === "light" ? "dark" : "light"));
   };
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
