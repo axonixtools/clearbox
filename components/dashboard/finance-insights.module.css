@@ -1,0 +1,128 @@
+.financeCard {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-0);
+  box-shadow: var(--shadow-sm);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.kicker {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--font-jetbrains), "IBM Plex Mono", monospace;
+}
+
+.title {
+  margin-top: 6px;
+  font-size: 1.1rem;
+}
+
+.subtitle {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  max-width: 52ch;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.statCard {
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--bg-hover);
+  padding: 12px;
+}
+
+.statCard p {
+  margin-top: 7px;
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-family: var(--font-jetbrains), "IBM Plex Mono", monospace;
+}
+
+.statCard h4 {
+  margin-top: 4px;
+  font-size: 1.02rem;
+}
+
+.providerPreview {
+  display: grid;
+  gap: 8px;
+}
+
+.providerRow {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-0);
+  padding: 10px 11px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.providerName {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.providerCount {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.providerNet {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.emptyText {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-hover);
+  padding: 11px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 760px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .header :global(.btn) {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .providerRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

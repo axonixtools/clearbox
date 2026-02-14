@@ -1,0 +1,16 @@
+{
+  "name": "ClearBox",
+  "short_name": "ClearBox",
+  "description": "Open-source inbox cleanup and finance insight dashboard for Gmail.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f8f6",
+  "theme_color": "#f5f8f6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
