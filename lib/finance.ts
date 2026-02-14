@@ -1,7 +1,7 @@
 import type { EmailMetadata } from "./gmail";
 
 export type FinanceDirection = "incoming" | "outgoing";
-export type FinanceCurrency = "PKR" | "USD" | "EUR" | "GBP" | "INR" | "AED" | "OTHER";
+export type FinanceCurrency = string;
 
 export type FinanceTransaction = {
   id: string;
@@ -88,39 +88,115 @@ const FINANCE_HINTS = [
 ];
 
 const AMOUNT_REGEX =
-  /(?:\u20A8|\u20B9|\u20AC|\u00A3|\$|pkr|usd|eur|gbp|inr|aed|rs\.?)?\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/gi;
+  /(?:[\p{Sc}]|[a-z]{3}|rs\.?)?\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/giu;
 
-const PROVIDER_RULES: Array<{ provider: string; patterns: RegExp[] }> = [
-  { provider: "NayaPay", patterns: [/\bnayapay\b/i] },
-  { provider: "SadaPay", patterns: [/\bsadapay\b/i] },
-  { provider: "JazzCash", patterns: [/\bjazzcash\b/i] },
-  { provider: "Easypaisa", patterns: [/\beasypaisa\b/i] },
-  { provider: "ABL", patterns: [/\babl\b/i, /\ballied bank\b/i] },
-  { provider: "UBL", patterns: [/\bubl\b/i, /\bunited bank\b/i] },
-  { provider: "HBL", patterns: [/\bhbl\b/i, /\bhabib bank\b/i] },
-  { provider: "MCB", patterns: [/\bmcb\b/i, /\bmuslim commercial bank\b/i] },
-  { provider: "Meezan Bank", patterns: [/\bmeezan\b/i] },
-  { provider: "Bank Alfalah", patterns: [/\balfalah\b/i] },
-  { provider: "Faysal Bank", patterns: [/\bfaysal\b/i] },
-  { provider: "Askari Bank", patterns: [/\baskari\b/i] },
-  { provider: "Standard Chartered", patterns: [/\bstandard chartered\b/i, /\bscb\b/i] },
-  { provider: "JS Bank", patterns: [/\bjs bank\b/i, /\bjsbank\b/i] },
-  { provider: "PayPal", patterns: [/\bpaypal\b/i] },
-  { provider: "Stripe", patterns: [/\bstripe\b/i] },
-  { provider: "Wise", patterns: [/\bwise\b/i] },
-  { provider: "Visa", patterns: [/\bvisa\b/i] },
-  { provider: "Mastercard", patterns: [/\bmastercard\b/i] },
-];
+const CURRENCY_CODE_PREFIX_REGEX =
+  /\b([a-z]{3})\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/gi;
+const CURRENCY_CODE_SUFFIX_REGEX =
+  /(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s*([a-z]{3})\b/gi;
 
-const CURRENCY_PREFIX: Record<FinanceCurrency, string> = {
-  PKR: "Rs",
-  USD: "$",
-  EUR: "EUR",
-  GBP: "GBP",
-  INR: "Rs",
-  AED: "AED",
-  OTHER: "",
+const CURRENCY_SYMBOL_TO_CODE: Record<string, string> = {
+  "R$": "BRL",
+  "A$": "AUD",
+  "C$": "CAD",
+  "NZ$": "NZD",
+  "HK$": "HKD",
+  "S$": "SGD",
+  "\u20AC": "EUR",
+  "\u00A3": "GBP",
+  "\u00A5": "JPY",
+  "\u20B9": "INR",
+  "\u20A9": "KRW",
+  "\u20BD": "RUB",
+  "\u20BA": "TRY",
+  "\u20AB": "VND",
+  "\u20A6": "NGN",
+  "\u20B1": "PHP",
+  "\u20B4": "UAH",
+  "\u20AA": "ILS",
+  "\u0E3F": "THB",
+  "\u20A8": "PKR",
+  "$": "USD",
 };
+
+const ORDERED_CURRENCY_SYMBOLS = Object.entries(CURRENCY_SYMBOL_TO_CODE).sort(
+  (a, b) => b[0].length - a[0].length,
+);
+
+const intlWithSupportedValues = Intl as typeof Intl & {
+  supportedValuesOf?: (key: string) => string[];
+};
+
+const ISO_CURRENCIES = new Set(
+  (intlWithSupportedValues.supportedValuesOf?.("currency") || []).map((code) => code.toUpperCase()),
+);
+
+const SECOND_LEVEL_TLD_PARTS = new Set([
+  "co",
+  "com",
+  "org",
+  "net",
+  "gov",
+  "edu",
+  "ac",
+]);
+
+const DOMAIN_NOISE_PARTS = new Set([
+  "www",
+  "mail",
+  "email",
+  "mailer",
+  "m",
+  "app",
+  "apps",
+  "secure",
+  "auth",
+  "accounts",
+  "account",
+  "alerts",
+  "alert",
+  "notify",
+  "notifications",
+  "notification",
+  "news",
+  "updates",
+  "update",
+  "support",
+  "help",
+  "info",
+  "service",
+  "services",
+  "team",
+]);
+
+const PROVIDER_STOP_WORDS = new Set([
+  "no",
+  "noreply",
+  "reply",
+  "notification",
+  "notifications",
+  "alerts",
+  "alert",
+  "support",
+  "team",
+  "info",
+  "account",
+  "accounts",
+  "service",
+  "services",
+  "system",
+  "automated",
+  "message",
+  "messages",
+  "update",
+  "updates",
+  "mail",
+  "email",
+  "customer",
+  "care",
+]);
+
+const WORD_JOINERS = new Set(["and", "of", "the", "for"]);
 
 function toISODate(dateRaw: string): string {
   const parsed = new Date(dateRaw);
@@ -149,41 +225,129 @@ function inferDirection(text: string): FinanceDirection | null {
 }
 
 function detectCurrency(text: string): FinanceCurrency {
-  if (/\u20A8|\brs\.?\b|\bpkr\b/i.test(text)) return "PKR";
-  if (/\u20AC|\beur\b/i.test(text)) return "EUR";
-  if (/\u00A3|\bgbp\b/i.test(text)) return "GBP";
-  if (/\u20B9|\binr\b/i.test(text)) return "INR";
-  if (/\baed\b/i.test(text)) return "AED";
-  if (/\$|\busd\b/i.test(text)) return "USD";
-  return "OTHER";
-}
-
-function formatProviderFromDomain(domain: string): string {
-  const normalized = domain.toLowerCase().replace(/^www\./, "");
-  if (!normalized) return "Other";
-
-  const pieces = normalized.split(".");
-  const root = pieces.length >= 2 ? pieces[pieces.length - 2] : pieces[0];
-  if (!root) return "Other";
-  if (root.length <= 4) return root.toUpperCase();
-  return `${root[0].toUpperCase()}${root.slice(1)}`;
-}
-
-function detectProvider(email: EmailMetadata): string {
-  const source = `${email.from} ${email.fromDomain} ${email.subject} ${email.snippet || ""}`.toLowerCase();
-
-  for (const rule of PROVIDER_RULES) {
-    if (rule.patterns.some((pattern) => pattern.test(source))) {
-      return rule.provider;
+  for (const match of text.matchAll(CURRENCY_CODE_PREFIX_REGEX)) {
+    const code = (match[1] || "").toUpperCase();
+    if (ISO_CURRENCIES.has(code)) {
+      return code;
     }
   }
 
-  if (email.fromDomain) {
-    return formatProviderFromDomain(email.fromDomain);
+  for (const match of text.matchAll(CURRENCY_CODE_SUFFIX_REGEX)) {
+    const code = (match[2] || "").toUpperCase();
+    if (ISO_CURRENCIES.has(code)) {
+      return code;
+    }
   }
 
-  const firstWord = email.from.replace(/<.*>/, "").trim().split(/\s+/)[0];
-  return firstWord || "Other";
+  for (const [symbol, code] of ORDERED_CURRENCY_SYMBOLS) {
+    if (text.includes(symbol)) {
+      return code;
+    }
+  }
+
+  if (/\brs\.?\b/i.test(text)) return "PKR";
+  return "OTHER";
+}
+
+function extractDomainRoot(domain: string): string {
+  const normalized = domain.toLowerCase().replace(/^www\./, "").replace(/\.+$/, "");
+  if (!normalized) return "";
+
+  const parts = normalized.split(".").filter(Boolean);
+  if (!parts.length) return "";
+
+  let rootIndex = Math.max(parts.length - 2, 0);
+  if (rootIndex > 0 && SECOND_LEVEL_TLD_PARTS.has(parts[rootIndex])) {
+    rootIndex -= 1;
+  }
+
+  for (let index = rootIndex; index >= 0; index -= 1) {
+    const candidate = parts[index];
+    if (!DOMAIN_NOISE_PARTS.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  return parts[rootIndex] || parts[0] || "";
+}
+
+function formatToken(word: string): string {
+  if (!word) return "";
+  if (/[A-Z]/.test(word.slice(1))) return word;
+  if (word.length <= 4 && /[a-z]/i.test(word)) return word.toUpperCase();
+  return `${word[0].toUpperCase()}${word.slice(1).toLowerCase()}`;
+}
+
+function formatProviderWords(raw: string[]): string {
+  const formatted = raw
+    .map((part, index) => {
+      const cleaned = part.replace(/[^a-z0-9&+]/gi, "");
+      if (!cleaned || /^\d+$/.test(cleaned)) return "";
+      const lower = cleaned.toLowerCase();
+      if (index > 0 && WORD_JOINERS.has(lower)) return lower;
+      return formatToken(cleaned);
+    })
+    .filter(Boolean);
+
+  if (!formatted.length) return "Other";
+  return formatted.slice(0, 4).join(" ");
+}
+
+function formatProviderFromDomain(domain: string): string {
+  const root = extractDomainRoot(domain);
+  if (!root) return "Other";
+
+  const compactRoot = root.endsWith("mail") && root.length > 6 ? root.slice(0, -4) : root;
+  const words = compactRoot.split(/[-_]+/).filter(Boolean);
+  return formatProviderWords(words);
+}
+
+function formatProviderFromSenderName(sender: string): string {
+  const sanitized = sender
+    .replace(/<[^>]*>/g, " ")
+    .replace(/["'`]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!sanitized) return "Other";
+
+  const words = sanitized
+    .split(/[\s|:/\\()[\],.]+/)
+    .map((part) => part.replace(/[^a-z0-9&+]/gi, ""))
+    .filter(Boolean)
+    .filter((part) => !PROVIDER_STOP_WORDS.has(part.toLowerCase()));
+
+  if (!words.length) return "Other";
+  return formatProviderWords(words);
+}
+
+function normalizeProviderForCompare(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function detectProvider(email: EmailMetadata): string {
+  const domainProvider = formatProviderFromDomain(email.fromDomain);
+  const senderProvider = formatProviderFromSenderName(email.from);
+  const subjectProvider = formatProviderFromSenderName(email.subject);
+
+  if (domainProvider !== "Other") {
+    if (senderProvider !== "Other") {
+      const senderNorm = normalizeProviderForCompare(senderProvider);
+      const domainNorm = normalizeProviderForCompare(domainProvider);
+      if (
+        senderNorm &&
+        domainNorm &&
+        (senderNorm.includes(domainNorm) || domainNorm.includes(senderNorm))
+      ) {
+        return senderProvider.length >= domainProvider.length ? senderProvider : domainProvider;
+      }
+    }
+    return domainProvider;
+  }
+
+  if (senderProvider !== "Other") return senderProvider;
+  if (subjectProvider !== "Other") return subjectProvider;
+
+  return "Other";
 }
 
 function isLikelyFinanceEmail(haystack: string, amount: number | null): boolean {
@@ -193,12 +357,21 @@ function isLikelyFinanceEmail(haystack: string, amount: number | null): boolean 
 }
 
 export function formatFinanceAmount(value: number, currency: FinanceCurrency): string {
-  const normalized = value.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  const prefix = CURRENCY_PREFIX[currency];
+  const code = currency.toUpperCase();
+  if (code !== "OTHER" && ISO_CURRENCIES.has(code)) {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: code,
+        currencyDisplay: "narrowSymbol",
+        maximumFractionDigits: 2,
+      }).format(value);
+    } catch {
+      // Fall back to plain formatting below.
+    }
+  }
 
-  if (!prefix) return normalized;
-  if (prefix.length === 1 || prefix === "$") return `${prefix}${normalized}`;
-  return `${prefix} ${normalized}`;
+  return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
 export function extractFinanceTransactions(emails: EmailMetadata[]): FinanceTransaction[] {

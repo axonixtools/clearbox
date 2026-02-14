@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, ChevronRight, Landmark, ReceiptText } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  ChevronRight,
+  Landmark,
+  ReceiptText,
+} from "lucide-react";
 import type { EmailMetadata } from "@/lib/gmail";
 import {
   extractFinanceTransactions,
@@ -21,9 +27,14 @@ export function FinanceInsights({ emails }: FinanceInsightsProps) {
   const transactions = extractFinanceTransactions(emails);
   const currencies = getCurrencyGroups(transactions);
   const activeCurrency = currencies[0] || "OTHER";
-  const currencyTransactions = filterFinanceTransactions(transactions, { currency: activeCurrency });
+  const currencyTransactions = filterFinanceTransactions(transactions, {
+    currency: activeCurrency,
+  });
   const totals = getFinanceTotals(currencyTransactions);
-  const topProviders = summarizeFinanceByProvider(currencyTransactions).slice(0, 3);
+  const topProviders = summarizeFinanceByProvider(currencyTransactions).slice(
+    0,
+    3,
+  );
 
   if (transactions.length === 0) {
     return (
@@ -33,7 +44,7 @@ export function FinanceInsights({ emails }: FinanceInsightsProps) {
             <p className={styles.kicker}>Finance center</p>
             <h3 className={styles.title}>No finance activity found yet</h3>
             <p className={styles.subtitle}>
-              Open the details page to refresh scan and manage provider groups like ABL, UBL, and NayaPay.
+              Open the details page to refresh scan and manage provider groups.
             </p>
           </div>
           <Link href="/dashboard/finance" className="btn btn-secondary">
@@ -52,7 +63,8 @@ export function FinanceInsights({ emails }: FinanceInsightsProps) {
           <p className={styles.kicker}>Finance center</p>
           <h3 className={styles.title}>Provider-based money view</h3>
           <p className={styles.subtitle}>
-            Grouped by bank and wallet. Active currency: <strong>{activeCurrency}</strong>.
+            Grouped by bank and wallet. Active currency:{" "}
+            <strong>{activeCurrency}</strong>.
           </p>
         </div>
         <Link href="/dashboard/finance" className="btn btn-secondary">
@@ -86,15 +98,21 @@ export function FinanceInsights({ emails }: FinanceInsightsProps) {
 
       <div className={styles.providerPreview}>
         {topProviders.length === 0 ? (
-          <p className={styles.emptyText}>No provider groups found in this currency.</p>
+          <p className={styles.emptyText}>
+            No provider groups found in this currency.
+          </p>
         ) : (
           topProviders.map((provider) => (
             <article key={provider.provider} className={styles.providerRow}>
               <div>
                 <p className={styles.providerName}>{provider.provider}</p>
-                <p className={styles.providerCount}>{provider.count.toLocaleString()} emails</p>
+                <p className={styles.providerCount}>
+                  {provider.count.toLocaleString()} emails
+                </p>
               </div>
-              <p className={styles.providerNet}>Net {formatFinanceAmount(provider.net, activeCurrency)}</p>
+              <p className={styles.providerNet}>
+                Net {formatFinanceAmount(provider.net, activeCurrency)}
+              </p>
             </article>
           ))
         )}
