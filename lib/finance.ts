@@ -127,8 +127,14 @@ const intlWithSupportedValues = Intl as typeof Intl & {
   supportedValuesOf?: (key: string) => string[];
 };
 
+const DEFAULT_CURRENCY_CODES = [
+  ...new Set([...Object.values(CURRENCY_SYMBOL_TO_CODE), "AED", "CHF", "CNY", "MXN", "SAR", "ZAR"]),
+];
+
 const ISO_CURRENCIES = new Set(
-  (intlWithSupportedValues.supportedValuesOf?.("currency") || []).map((code) => code.toUpperCase()),
+  (intlWithSupportedValues.supportedValuesOf?.("currency") || DEFAULT_CURRENCY_CODES).map((code) =>
+    code.toUpperCase(),
+  ),
 );
 
 const SECOND_LEVEL_TLD_PARTS = new Set([
