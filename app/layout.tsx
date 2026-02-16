@@ -25,6 +25,7 @@ const spaceGrotesk = Space_Grotesk({
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://clear-box.netlify.app";
 const APP_BASE_URL = new URL(APP_URL);
 const GOOGLE_TAG_ID = "G-6307QD91HZ";
+const GOOGLE_TAG_ADDITIONAL_ID = "G-FB0284P4PL";
 
 export const viewport: Viewport = {
   themeColor: "#f5f8f6",
@@ -140,6 +141,7 @@ export default function RootLayout({
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
               gtag('config', '${GOOGLE_TAG_ID}');
+              gtag('config', '${GOOGLE_TAG_ADDITIONAL_ID}');
             `,
           }}
         />
