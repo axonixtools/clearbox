@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bot, Inbox, MailCheck, Newspaper, ReceiptText, Search, ShieldAlert, Users } from "lucide-react";
 import type { EmailBulkAction, EmailMetadata } from "@/lib/gmail";
+import type { PricingUsage } from "@/types/pricing";
 import styles from "./dashboard-components.module.css";
 
 interface CategoryCardProps {
   type: "newsletters" | "social" | "receipts" | "other";
   emails: EmailMetadata[];
   onResolve: (messageIds: string[], category: "newsletters" | "social" | "receipts" | "other") => void;
+  usage?: PricingUsage | null;
+  onUsageUpdate?: (usage: PricingUsage) => void;
 }
 
 const CATEGORY_MAP = {
@@ -34,17 +37,17 @@ const CATEGORY_MAP = {
   },
 } as const;
 
-function parseApiError(raw: string): string {
+function parseApiError(raw: string): { message: string; usage?: PricingUsage } {
   try {
-    const payload = JSON.parse(raw) as { error?: string };
-    if (payload?.error) return payload.error;
+    const payload = JSON.parse(raw) as { error?: string; usage?: PricingUsage };
+    if (payload?.error) return { message: payload.error, usage: payload.usage };
   } catch {
     // Fall through to raw text.
   }
-  return raw || "Request failed.";
+  return { message: raw || "Request failed." };
 }
 
-export function CategoryCard({ type, emails, onResolve }: CategoryCardProps) {
+export function CategoryCard({ type, emails, onResolve, usage, onUsageUpdate }: CategoryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [notice, setNotice] = useState("");
@@ -74,6 +77,7 @@ export function CategoryCard({ type, emails, onResolve }: CategoryCardProps) {
   const visibleSelectedCount = filteredEmails.filter((email) => selectedIds.has(email.id)).length;
   const selectedVisibleIds = filteredEmails.filter((email) => selectedIds.has(email.id)).map((email) => email.id);
   const selectedEmailForAssistant = filteredEmails.find((email) => selectedIds.has(email.id)) || null;
+  const isFreeLimitReached = usage?.plan === "free" && usage.limitReached;
 
   const toggleSelect = (id: string) => {
     setSelectedIds((current) => {
@@ -101,6 +105,13 @@ export function CategoryCard({ type, emails, onResolve }: CategoryCardProps) {
   };
 
   const handleBulkAction = async (action: EmailBulkAction) => {
+    if (isFreeLimitReached) {
+      setNotice(
+        usage?.upgradeUrl ? "Free clear limit reached. Upgrade your plan to continue." : "Free clear limit reached.",
+      );
+      return;
+    }
+
     if (selectedVisibleIds.length === 0) {
       setNotice("Select at least one email first.");
       return;
@@ -117,11 +128,17 @@ export function CategoryCard({ type, emails, onResolve }: CategoryCardProps) {
       });
 
       if (!res.ok) {
-        const rawError = await res.text();
-        throw new Error(parseApiError(rawError));
+        const parsedError = parseApiError(await res.text());
+        if (parsedError.usage && onUsageUpdate) {
+          onUsageUpdate(parsedError.usage);
+        }
+        throw new Error(parsedError.message);
       }
 
-      const payload = (await res.json()) as { message?: string };
+      const payload = (await res.json()) as { message?: string; usage?: PricingUsage };
+      if (payload.usage && onUsageUpdate) {
+        onUsageUpdate(payload.usage);
+      }
       onResolve(selectedVisibleIds, type);
       setNotice(payload.message || "Action completed.");
     } catch (error: unknown) {
@@ -154,7 +171,7 @@ export function CategoryCard({ type, emails, onResolve }: CategoryCardProps) {
 
       if (!res.ok) {
         const rawError = await res.text();
-        throw new Error(parseApiError(rawError));
+        throw new Error(parseApiError(rawError).message);
       }
 
       const payload = (await res.json()) as { draft: string };
@@ -234,18 +251,46 @@ export function CategoryCard({ type, emails, onResolve }: CategoryCardProps) {
           </div>
 
           <div className={styles.actionTools}>
-            <button className="btn btn-secondary" onClick={() => handleBulkAction("markRead")}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleBulkAction("markRead")}
+              disabled={isProcessing || isFreeLimitReached}
+            >
               <MailCheck className="h-4 w-4" />
               Mark read
             </button>
-            <button className="btn btn-secondary" onClick={() => handleBulkAction("archive")}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleBulkAction("archive")}
+              disabled={isProcessing || isFreeLimitReached}
+            >
               Archive
             </button>
-            <button className="btn btn-secondary" onClick={() => handleBulkAction("spam")}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleBulkAction("spam")}
+              disabled={isProcessing || isFreeLimitReached}
+            >
               <ShieldAlert className="h-4 w-4" />
               Remove as spam
             </button>
           </div>
+
+          {usage?.plan === "free" && usage.clearLimit !== null ? (
+            <div className={styles.usageMeter}>
+              <p className={styles.usageMeterValue}>
+                Free usage {usage.clearedEmails.toLocaleString()} / {usage.clearLimit.toLocaleString()} clears
+              </p>
+              <p className={styles.usageMeterHint}>
+                {(usage.remainingClears || 0).toLocaleString()} free clears remaining
+              </p>
+              {isFreeLimitReached && usage.upgradeUrl ? (
+                <a href={usage.upgradeUrl} target="_blank" rel="noreferrer" className="btn btn-primary">
+                  Upgrade to continue
+                </a>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className={styles.emailRows}>
             {filteredEmails.length === 0 ? (

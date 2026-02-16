@@ -22,6 +22,9 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://clear-box.netlify.app";
+const APP_BASE_URL = new URL(APP_URL);
+
 export const viewport: Viewport = {
   themeColor: "#f5f8f6",
   width: "device-width",
@@ -29,7 +32,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://clearbox.email"),
+  metadataBase: APP_BASE_URL,
   title: {
     default: "ClearBox - Elite Email Cleaning and Inbox Zero Tool",
     template: "%s | ClearBox",
@@ -48,7 +51,7 @@ export const metadata: Metadata = {
     "AI email assistant",
     "reduce email clutter",
   ],
-  authors: [{ name: "ClearBox Team", url: "https://clearbox.email" }],
+  authors: [{ name: "ClearBox Team", url: APP_URL }],
   creator: "ClearBox Team",
   publisher: "ClearBox Inc.",
   robots: {
@@ -66,7 +69,7 @@ export const metadata: Metadata = {
     title: "ClearBox - Elite Email Cleaning and Inbox Zero Tool",
     description:
       "Transform your inbox with ClearBox. The secure, AI-driven solution for bulk unsubscribing and achieving Inbox Zero.",
-    url: "https://clearbox.email",
+    url: APP_URL,
     siteName: "ClearBox",
     locale: "en_US",
     type: "website",
@@ -121,7 +124,7 @@ export default function RootLayout({
     publisher: {
       "@type": "Organization",
       name: "ClearBox Inc.",
-      url: "https://clearbox.email",
+      url: APP_URL,
     },
   };
 

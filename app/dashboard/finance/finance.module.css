@@ -78,6 +78,34 @@
   gap: 8px;
 }
 
+.usagePanel {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-0);
+  box-shadow: var(--shadow-sm);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.usageLabel {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--font-jetbrains), "IBM Plex Mono", monospace;
+}
+
+.usageValue {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.usageHint {
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+
 .metaItem {
   border: 1px solid var(--border);
   border-radius: 999px;

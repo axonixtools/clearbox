@@ -12,6 +12,7 @@ import { FinanceInsights } from "@/components/dashboard/FinanceInsights";
 import { Footer } from "@/components/landing/Footer";
 import { EmailStats } from "@/lib/categorize";
 import type { EmailMetadata } from "@/lib/gmail";
+import type { PricingUsage } from "@/types/pricing";
 import styles from "./dashboard.module.css";
 
 type DashboardState = "WELCOME" | "SCANNING" | "RESULTS" | "ROASTING" | "CELEBRATED";
@@ -26,6 +27,13 @@ type EmailBuckets = {
 type CachedScan = {
   emails: EmailBuckets;
   scannedAt: string;
+};
+
+type ScanApiResponse = {
+  emails: EmailBuckets;
+  stats: EmailStats;
+  shameScore: { score: number; label: string; description: string };
+  usage?: PricingUsage;
 };
 
 const SCAN_STORAGE_KEY = "clearbox-last-scan";
@@ -62,6 +70,7 @@ export default function Dashboard() {
   );
   const [scanMeta, setScanMeta] = useState<{ scannedAt: string; initialTotal: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<PricingUsage | null>(null);
 
   const initialTotal = scanMeta?.initialTotal ?? stats?.total ?? 0;
   const cleanedCount = Math.max(initialTotal - (stats?.total ?? 0), 0);
@@ -95,10 +104,11 @@ export default function Dashboard() {
         throw new Error(data.error || "Failed to scan emails");
       }
 
-      const data = await res.json();
+      const data = (await res.json()) as ScanApiResponse;
       setEmails(data.emails);
       setStats(data.stats);
       setShameScore(data.shameScore);
+      setUsage(data.usage || null);
       const scannedAt = new Date().toISOString();
       setScanMeta({ scannedAt, initialTotal: data.stats.total });
       cacheScan(data.emails, scannedAt);
@@ -130,6 +140,10 @@ export default function Dashboard() {
     if (newStats.total === 0) {
       setState("CELEBRATED");
     }
+  };
+
+  const handleUsageUpdate = (nextUsage: PricingUsage) => {
+    setUsage(nextUsage);
   };
 
   if (status === "loading") {
@@ -206,6 +220,27 @@ export default function Dashboard() {
                 </button>
               </div>
 
+              {usage && (
+                <div className={styles.usagePanel}>
+                  <p className={styles.usageLabel}>{usage.plan === "pro" ? "Pro plan" : "Free plan usage"}</p>
+                  <p className={styles.usageValue}>
+                    {usage.plan === "free" && usage.clearLimit !== null
+                      ? `${usage.clearedEmails.toLocaleString()} / ${usage.clearLimit.toLocaleString()} clears used`
+                      : `${usage.clearedEmails.toLocaleString()} clears processed`}
+                  </p>
+                  <p className={styles.usageHint}>
+                    {usage.plan === "free" && usage.remainingClears !== null
+                      ? `${usage.remainingClears.toLocaleString()} free clears remaining`
+                      : "Unlimited clears active"}
+                  </p>
+                  {usage.limitReached && usage.upgradeUrl ? (
+                    <a href={usage.upgradeUrl} target="_blank" rel="noreferrer" className="btn btn-primary">
+                      Upgrade plan
+                    </a>
+                  ) : null}
+                </div>
+              )}
+
               <StatsOverview stats={stats} shameScore={shameScore} onStartRoast={() => setState("ROASTING")} />
 
               {state === "ROASTING" && <RoastDisplay stats={stats} onDone={() => {}} />}
@@ -217,10 +252,30 @@ export default function Dashboard() {
                     type="newsletters"
                     emails={emails?.newsletters || []}
                     onResolve={handleResolveEmails}
+                    usage={usage}
+                    onUsageUpdate={handleUsageUpdate}
                   />
-                  <CategoryCard type="social" emails={emails?.social || []} onResolve={handleResolveEmails} />
-                  <CategoryCard type="receipts" emails={emails?.receipts || []} onResolve={handleResolveEmails} />
-                  <CategoryCard type="other" emails={emails?.other || []} onResolve={handleResolveEmails} />
+                  <CategoryCard
+                    type="social"
+                    emails={emails?.social || []}
+                    onResolve={handleResolveEmails}
+                    usage={usage}
+                    onUsageUpdate={handleUsageUpdate}
+                  />
+                  <CategoryCard
+                    type="receipts"
+                    emails={emails?.receipts || []}
+                    onResolve={handleResolveEmails}
+                    usage={usage}
+                    onUsageUpdate={handleUsageUpdate}
+                  />
+                  <CategoryCard
+                    type="other"
+                    emails={emails?.other || []}
+                    onResolve={handleResolveEmails}
+                    usage={usage}
+                    onUsageUpdate={handleUsageUpdate}
+                  />
                   <FinanceInsights
                     emails={[
                       ...(emails?.newsletters || []),

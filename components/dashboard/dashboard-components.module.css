@@ -293,6 +293,26 @@
   gap: 8px;
 }
 
+.usageMeter {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-0);
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.usageMeterValue {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.usageMeterHint {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
 .emailRows {
   margin-top: 12px;
   display: grid;

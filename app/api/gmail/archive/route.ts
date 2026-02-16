@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { archiveEmails } from "@/lib/gmail";
+import { checkClearAllowance, normalizeUserEmail, recordClearedEmails } from "@/lib/pricing";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,6 +11,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Not authenticated. Please sign in again." },
         { status: 401 }
+      );
+    }
+
+    const userEmail = normalizeUserEmail(session.user?.email);
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: "Could not determine your account email. Please sign out and sign in again." },
+        { status: 400 }
       );
     }
 
@@ -23,7 +32,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const allowance = await checkClearAllowance(userEmail, messageIds.length);
+    if (!allowance.allowed) {
+      return NextResponse.json(
+        {
+          error: allowance.message,
+          code: "FREE_CLEAR_LIMIT_REACHED",
+          usage: allowance.usage,
+        },
+        { status: 402 },
+      );
+    }
+
     const result = await archiveEmails(session.accessToken, messageIds);
+    const usage =
+      result.archived > 0 ? await recordClearedEmails(userEmail, result.archived) : allowance.usage;
 
     return NextResponse.json({
       archived: result.archived,
@@ -32,6 +55,7 @@ export async function POST(request: NextRequest) {
         result.failed > 0
           ? `Archived ${result.archived} emails. ${result.failed} failed.`
           : `Successfully archived ${result.archived} emails.`,
+      usage,
     });
   } catch (error: unknown) {
     const err = error as { message?: string };

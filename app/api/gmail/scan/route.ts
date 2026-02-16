@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { scanUnreadEmails } from "@/lib/gmail";
 import { categorizeEmails, generateStats, calculateShameScore } from "@/lib/categorize";
+import { checkAndRecordScanAllowance, getPricingUsage, normalizeUserEmail } from "@/lib/pricing";
 
 export async function GET() {
   try {
@@ -14,10 +15,31 @@ export async function GET() {
       );
     }
 
+    const userEmail = normalizeUserEmail(session.user?.email);
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: "Could not determine your account email. Please sign out and sign in again." },
+        { status: 400 }
+      );
+    }
+
+    const scanAllowance = await checkAndRecordScanAllowance(userEmail);
+    if (!scanAllowance.allowed) {
+      return NextResponse.json(
+        {
+          error: scanAllowance.message,
+          code: "SCAN_RATE_LIMIT_REACHED",
+          scanRate: scanAllowance.scanRate,
+        },
+        { status: 429 }
+      );
+    }
+
     const emails = await scanUnreadEmails(session.accessToken);
     const categorized = categorizeEmails(emails);
     const stats = generateStats(emails, categorized);
     const shameScore = calculateShameScore(stats);
+    const usage = await getPricingUsage(userEmail);
 
     return NextResponse.json({
       emails: {
@@ -56,6 +78,8 @@ export async function GET() {
       },
       stats,
       shameScore,
+      usage,
+      scanRate: scanAllowance.scanRate,
     });
   } catch (error: unknown) {
     const err = error as { message?: string };

@@ -16,6 +16,7 @@ import {
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import type { EmailMetadata } from "@/lib/gmail";
+import type { PricingUsage } from "@/types/pricing";
 import {
   type FinanceCurrency,
   type FinanceDirection,
@@ -40,6 +41,7 @@ type EmailBuckets = {
 
 type ScanResponse = {
   emails: EmailBuckets;
+  usage?: PricingUsage;
 };
 
 type CachedScan = {
@@ -63,14 +65,14 @@ function toDateLabel(dateKey: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function parseApiError(raw: string): string {
+function parseApiError(raw: string): { message: string; usage?: PricingUsage } {
   try {
-    const payload = JSON.parse(raw) as { error?: string };
-    if (payload?.error) return payload.error;
+    const payload = JSON.parse(raw) as { error?: string; usage?: PricingUsage };
+    if (payload?.error) return { message: payload.error, usage: payload.usage };
   } catch {
     // Fall back to plain text.
   }
-  return raw || "Request failed.";
+  return { message: raw || "Request failed." };
 }
 
 function readCachedScan(): CachedScan | null {
@@ -124,6 +126,7 @@ export default function FinancePage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [lastScanAt, setLastScanAt] = useState<string | null>(null);
+  const [usage, setUsage] = useState<PricingUsage | null>(null);
 
   const [selectedCurrency, setSelectedCurrency] =
     useState<FinanceCurrency>("OTHER");
@@ -187,6 +190,7 @@ export default function FinancePage() {
       ),
     [daySummary],
   );
+  const isFreeLimitReached = usage?.plan === "free" && usage.limitReached;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -216,7 +220,7 @@ export default function FinancePage() {
     try {
       const res = await fetch("/api/gmail/scan");
       if (!res.ok) {
-        throw new Error(parseApiError(await res.text()));
+        throw new Error(parseApiError(await res.text()).message);
       }
 
       const data = (await res.json()) as ScanResponse;
@@ -226,6 +230,7 @@ export default function FinancePage() {
       );
       setTransactions(nextTransactions);
       setLastScanAt(scannedAt);
+      setUsage(data.usage || null);
       writeCachedScan({ emails: data.emails, scannedAt });
       setNotice("Finance scan updated.");
     } catch (caughtError: unknown) {
@@ -254,6 +259,15 @@ export default function FinancePage() {
   }, [status]);
 
   const archiveProviderGroup = async (provider: string) => {
+    if (isFreeLimitReached) {
+      setError(
+        usage?.upgradeUrl
+          ? "Free clear limit reached. Upgrade your plan to continue."
+          : "Free clear limit reached.",
+      );
+      return;
+    }
+
     const ids = [
       ...new Set(
         currencyTransactions
@@ -279,7 +293,16 @@ export default function FinancePage() {
       });
 
       if (!res.ok) {
-        throw new Error(parseApiError(await res.text()));
+        const parsedError = parseApiError(await res.text());
+        if (parsedError.usage) {
+          setUsage(parsedError.usage);
+        }
+        throw new Error(parsedError.message);
+      }
+
+      const payload = (await res.json()) as { message?: string; usage?: PricingUsage };
+      if (payload.usage) {
+        setUsage(payload.usage);
       }
 
       const idSet = new Set(ids);
@@ -287,9 +310,7 @@ export default function FinancePage() {
         current.filter((transaction) => !idSet.has(transaction.id)),
       );
       pruneCachedScanByIds(idSet);
-      setNotice(
-        `Archived ${ids.length.toLocaleString()} emails from ${provider}.`,
-      );
+      setNotice(payload.message || `Archived ${ids.length.toLocaleString()} emails from ${provider}.`);
     } catch (caughtError: unknown) {
       const caught = caughtError as { message?: string };
       setError(caught.message || "Failed to archive provider group.");
@@ -346,7 +367,7 @@ export default function FinancePage() {
               <button
                 className="btn btn-primary"
                 onClick={archiveCurrentGroup}
-                disabled={activeProvider === "ALL" || isArchiving}
+                disabled={activeProvider === "ALL" || isArchiving || isFreeLimitReached}
               >
                 <Trash2 className="h-4 w-4" />
                 {isArchiving ? "Archiving..." : "Remove selected group"}
@@ -361,6 +382,27 @@ export default function FinancePage() {
               {currencyTransactions.length.toLocaleString()} finance emails
             </p>
           </div>
+
+          {usage ? (
+            <section className={styles.usagePanel}>
+              <p className={styles.usageLabel}>{usage.plan === "pro" ? "Pro plan" : "Free plan usage"}</p>
+              <p className={styles.usageValue}>
+                {usage.plan === "free" && usage.clearLimit !== null
+                  ? `${usage.clearedEmails.toLocaleString()} / ${usage.clearLimit.toLocaleString()} clears used`
+                  : `${usage.clearedEmails.toLocaleString()} clears processed`}
+              </p>
+              <p className={styles.usageHint}>
+                {usage.plan === "free" && usage.remainingClears !== null
+                  ? `${usage.remainingClears.toLocaleString()} free clears remaining`
+                  : "Unlimited clears active"}
+              </p>
+              {usage.limitReached && usage.upgradeUrl ? (
+                <a href={usage.upgradeUrl} target="_blank" rel="noreferrer" className="btn btn-primary">
+                  Upgrade plan
+                </a>
+              ) : null}
+            </section>
+          ) : null}
 
           {error ? <p className={styles.error}>{error}</p> : null}
           {notice ? <p className={styles.notice}>{notice}</p> : null}
@@ -580,7 +622,7 @@ export default function FinancePage() {
                               onClick={() =>
                                 archiveProviderGroup(provider.provider)
                               }
-                              disabled={isArchiving}
+                              disabled={isArchiving || isFreeLimitReached}
                             >
                               Remove group
                             </button>

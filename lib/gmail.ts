@@ -11,6 +11,17 @@ export interface EmailMetadata {
 
 export type EmailBulkAction = "archive" | "markRead" | "spam" | "trash";
 
+const DEFAULT_MAX_SCAN_EMAILS = 1000;
+
+function getMaxScanEmails(): number {
+  const parsed = Number.parseInt(process.env.CLEARBOX_MAX_SCAN_EMAILS || "", 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_MAX_SCAN_EMAILS;
+  }
+
+  return parsed;
+}
+
 /**
  * Scan all unread emails from Gmail.
  * Fetches in batches of 100 (Gmail API limit per page).
@@ -27,7 +38,7 @@ export async function scanUnreadEmails(
   const emails: EmailMetadata[] = [];
   let pageToken: string | undefined;
   let totalFetched = 0;
-  const MAX_EMAILS = 1000; // Cap at 1000 for performance
+  const maxEmails = getMaxScanEmails();
 
   console.log("Starting Gmail scan...");
 
@@ -99,8 +110,8 @@ export async function scanUnreadEmails(
         totalFetched += batch.length;
         onProgress?.(totalFetched);
 
-        if (emails.length >= MAX_EMAILS) {
-          console.log(`Reached limit of ${MAX_EMAILS} emails. Stopping scan.`);
+        if (emails.length >= maxEmails) {
+          console.log(`Reached limit of ${maxEmails} emails. Stopping scan.`);
           return emails;
         }
       }
