@@ -1,9 +1,11 @@
-import type { PricingUsage, ScanRateUsage } from "@/types/pricing";
+import type { PricingUsage, ReplyRateUsage, ScanRateUsage } from "@/types/pricing";
 
 const DEFAULT_FREE_CLEAR_LIMIT = 10_000;
 const DEFAULT_SCAN_LIMIT_PER_DAY = 20;
+const DEFAULT_REPLY_LIMIT_PER_DAY = 30;
 const USAGE_KEY_PREFIX = "clearbox:pricing:cleared:";
 const SCAN_RATE_KEY_PREFIX = "clearbox:rate:scan:";
+const REPLY_RATE_KEY_PREFIX = "clearbox:rate:reply:";
 
 type UpstashResponse = {
   result: string | number | null;
@@ -37,6 +39,10 @@ function getScanLimitPerDay(): number {
   return parsePositiveInteger(process.env.CLEARBOX_SCAN_LIMIT_PER_DAY, DEFAULT_SCAN_LIMIT_PER_DAY);
 }
 
+function getReplyLimitPerDay(): number {
+  return parsePositiveInteger(process.env.CLEARBOX_REPLY_LIMIT_PER_DAY, DEFAULT_REPLY_LIMIT_PER_DAY);
+}
+
 function getPaidEmailSet(): Set<string> {
   const configured = process.env.CLEARBOX_PRO_EMAILS ?? process.env.PAID_USER_EMAILS ?? "";
 
@@ -54,6 +60,10 @@ function getUsageKey(email: string): string {
 
 function getScanRateKey(email: string, dateKey: string): string {
   return `${SCAN_RATE_KEY_PREFIX}${email}:${dateKey}`;
+}
+
+function getReplyRateKey(email: string, dateKey: string): string {
+  return `${REPLY_RATE_KEY_PREFIX}${email}:${dateKey}`;
 }
 
 function parseUsageCount(value: string | number | null): number {
@@ -221,12 +231,26 @@ function buildScanRateSnapshot(scansUsedToday: number, limit: number, resetAt: s
   };
 }
 
+function buildReplyRateSnapshot(repliesUsedToday: number, limit: number, resetAt: string): ReplyRateUsage {
+  return {
+    repliesUsedToday,
+    repliesRemainingToday: Math.max(limit - repliesUsedToday, 0),
+    replyLimitPerDay: limit,
+    limitReached: repliesUsedToday >= limit,
+    resetAt,
+  };
+}
+
 function formatUtcResetTime(iso: string): string {
   return iso.replace(".000Z", "Z");
 }
 
 function buildScanRateLimitMessage(scanRate: ScanRateUsage): string {
   return `You reached the scan limit of ${formatCount(scanRate.scanLimitPerDay)} scans today. Try again after ${formatUtcResetTime(scanRate.resetAt)}.`;
+}
+
+function buildReplyRateLimitMessage(replyRate: ReplyRateUsage): string {
+  return `You reached the AI reply limit of ${formatCount(replyRate.replyLimitPerDay)} replies today. Try again after ${formatUtcResetTime(replyRate.resetAt)}.`;
 }
 
 export async function getPricingUsage(email: string): Promise<PricingUsage> {
@@ -311,5 +335,36 @@ export async function checkAndRecordScanAllowance(
   return {
     allowed: true,
     scanRate,
+  };
+}
+
+export async function checkAndRecordReplyAllowance(
+  email: string,
+): Promise<{ allowed: true; replyRate: ReplyRateUsage } | { allowed: false; replyRate: ReplyRateUsage; message: string }> {
+  const normalizedEmail = normalizeUserEmail(email);
+  if (!normalizedEmail) {
+    throw new Error("MISSING_USER_EMAIL");
+  }
+
+  const now = new Date();
+  const dateKey = getUtcDateKey(now);
+  const replyLimit = getReplyLimitPerDay();
+  const resetAt = getNextUtcMidnightIso(now);
+  const replyRateKey = getReplyRateKey(normalizedEmail, dateKey);
+
+  const repliesUsedToday = await incrementCounterValueInStore(replyRateKey, 1);
+  const replyRate = buildReplyRateSnapshot(repliesUsedToday, replyLimit, resetAt);
+
+  if (repliesUsedToday > replyLimit) {
+    return {
+      allowed: false,
+      replyRate,
+      message: buildReplyRateLimitMessage(replyRate),
+    };
+  }
+
+  return {
+    allowed: true,
+    replyRate,
   };
 }

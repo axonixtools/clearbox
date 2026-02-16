@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { generateReplyDraft } from "@/lib/chat";
 import type { EmailMetadata } from "@/lib/gmail";
+import { checkAndRecordReplyAllowance, normalizeUserEmail } from "@/lib/pricing";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +15,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userEmail = normalizeUserEmail(session.user?.email);
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: "Could not determine your account email. Please sign out and sign in again." },
+        { status: 400 },
+      );
+    }
+
     const body = await request.json();
     const { email, instruction } = body as {
       email?: EmailMetadata;
@@ -22,6 +31,18 @@ export async function POST(request: NextRequest) {
 
     if (!email?.id || !email.subject) {
       return NextResponse.json({ error: "Email details are required." }, { status: 400 });
+    }
+
+    const allowance = await checkAndRecordReplyAllowance(userEmail);
+    if (!allowance.allowed) {
+      return NextResponse.json(
+        {
+          error: allowance.message,
+          code: "AI_REPLY_RATE_LIMIT_REACHED",
+          replyRate: allowance.replyRate,
+        },
+        { status: 429 },
+      );
     }
 
     const draft = await generateReplyDraft(email, instruction);

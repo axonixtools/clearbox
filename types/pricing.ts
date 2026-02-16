@@ -16,3 +16,11 @@ export interface ScanRateUsage {
   limitReached: boolean;
   resetAt: string;
 }
+
+export interface ReplyRateUsage {
+  repliesUsedToday: number;
+  repliesRemainingToday: number;
+  replyLimitPerDay: number;
+  limitReached: boolean;
+  resetAt: string;
+}

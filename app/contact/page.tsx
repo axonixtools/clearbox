@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Clock3, Github, HelpCircle, Mail, MessageSquare, Users } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Clock3, Github, HelpCircle, Mail, MessageSquare, Users } from "lucide-react";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 import styles from "../info-pages.module.css";
@@ -64,40 +64,48 @@ export default function ContactPage() {
 
           <section className={styles.contactMeta}>
             <article className={styles.responseCard}>
-              <div className="flex items-center gap-2">
-                <Clock3 className="h-4 w-4 text-[var(--brand-700)]" />
+              <div className={styles.responseHeader}>
+                <Clock3 className={`h-4 w-4 ${styles.responseIcon}`} />
                 <h3>Response times</h3>
               </div>
-              <p>
+              <p className={styles.responseBody}>
                 Support requests are typically answered within one business day. Partnership and press inquiries
                 may take slightly longer.
               </p>
             </article>
 
             <article className={styles.responseCard}>
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-[var(--brand-700)]" />
+              <div className={styles.responseHeader}>
+                <Users className={`h-4 w-4 ${styles.responseIcon}`} />
                 <h3>Social updates</h3>
               </div>
-              <p>Follow product updates, release notes, and tips on X and GitHub.</p>
-              <a
-                href="https://x.com/axonixtools"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary mt-3 w-full"
-              >
-                <MessageSquare className="h-4 w-4" />
-                @axonixtools
-              </a>
-              <a
-                href="https://github.com/axonixtools"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-secondary mt-2 w-full"
-              >
-                <Github className="h-4 w-4" />
-                github.com/axonixtools
-              </a>
+              <p className={styles.responseBody}>Follow product updates, release notes, and tips on X and GitHub.</p>
+              <div className={styles.socialLinks}>
+                <a
+                  href="https://x.com/axonixtools"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.socialLinkPrimary}
+                >
+                  <span className={styles.socialLinkIcon}>
+                    <MessageSquare className="h-4 w-4" />
+                  </span>
+                  <span className={styles.socialLinkLabel}>@axonixtools</span>
+                  <ArrowUpRight className={`h-4 w-4 ${styles.socialLinkArrow}`} />
+                </a>
+                <a
+                  href="https://github.com/axonixtools"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.socialLinkSecondary}
+                >
+                  <span className={styles.socialLinkIcon}>
+                    <Github className="h-4 w-4" />
+                  </span>
+                  <span className={styles.socialLinkLabel}>github.com/axonixtools</span>
+                  <ArrowUpRight className={`h-4 w-4 ${styles.socialLinkArrow}`} />
+                </a>
+              </div>
             </article>
           </section>
         </div>

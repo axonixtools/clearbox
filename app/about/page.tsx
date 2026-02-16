@@ -101,14 +101,17 @@ export default function AboutPage() {
             ))}
           </section>
 
-          <section className={`${styles.panel} p-5 mt-3`}>
-            <div className="flex items-center gap-3 mb-2">
-              <Sparkles className="h-4 w-4 text-[var(--brand-700)]" />
-              <p className="font-semibold text-[var(--text-primary)]">Want to talk with the team?</p>
+          <section className={`${styles.panel} ${styles.teamCta}`}>
+            <div className={styles.teamCtaHeader}>
+              <Sparkles className={`h-4 w-4 ${styles.teamCtaIcon}`} />
+              <p className={styles.teamCtaTitle}>Want to talk with the team?</p>
             </div>
-            <p className="text-[var(--text-secondary)] leading-relaxed">
+            <p className={styles.teamCtaBody}>
               Visit the contact page for support, feedback, partnerships, or product collaboration.
             </p>
+            <Link href="/contact" className={styles.teamCtaLink}>
+              Open contact page
+            </Link>
           </section>
         </div>
       </div>
