@@ -1,12 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Clock3, Github, HelpCircle, Mail, MessageSquare, Users } from "lucide-react";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 import styles from "../info-pages.module.css";
 
-export const metadata = {
-  title: "Contact Us | ClearBox",
-  description: "Get in touch with the ClearBox team for support, feedback, partnerships, or press.",
+const CONTACT_DESCRIPTION =
+  "Contact the ClearBox team for product support, feedback, partnerships, or press inquiries.";
+
+export const metadata: Metadata = {
+  title: "Contact",
+  description: CONTACT_DESCRIPTION,
+  alternates: {
+    canonical: "/contact",
+  },
+  openGraph: {
+    title: "Contact ClearBox",
+    description: CONTACT_DESCRIPTION,
+    url: "/contact",
+    type: "website",
+  },
+  twitter: {
+    title: "Contact ClearBox",
+    description: CONTACT_DESCRIPTION,
+  },
 };
 
 const CONTACT_OPTIONS = [

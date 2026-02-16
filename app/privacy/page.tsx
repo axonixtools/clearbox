@@ -1,12 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 import styles from "../info-pages.module.css";
 
-export const metadata = {
-  title: "Privacy Policy | ClearBox",
-  description: "Read how ClearBox handles data with strict privacy and minimization principles.",
+const PRIVACY_DESCRIPTION =
+  "How ClearBox handles Gmail metadata, OAuth access, and security with strict data minimization.";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: PRIVACY_DESCRIPTION,
+  alternates: {
+    canonical: "/privacy",
+  },
+  openGraph: {
+    title: "ClearBox Privacy Policy",
+    description: PRIVACY_DESCRIPTION,
+    url: "/privacy",
+    type: "article",
+  },
+  twitter: {
+    title: "ClearBox Privacy Policy",
+    description: PRIVACY_DESCRIPTION,
+  },
 };
 
 type PrivacySection = {

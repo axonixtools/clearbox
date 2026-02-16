@@ -1,13 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Heart, Shield, Sparkles, Zap } from "lucide-react";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 import styles from "../info-pages.module.css";
 
-export const metadata = {
-  title: "About Us | ClearBox",
-  description:
-    "Learn about the team behind ClearBox and why we built a faster, cleaner way to recover messy inboxes.",
+const ABOUT_DESCRIPTION =
+  "Learn why ClearBox was built and the principles behind fast, privacy-first inbox cleanup.";
+
+export const metadata: Metadata = {
+  title: "About",
+  description: ABOUT_DESCRIPTION,
+  alternates: {
+    canonical: "/about",
+  },
+  openGraph: {
+    title: "About ClearBox",
+    description: ABOUT_DESCRIPTION,
+    url: "/about",
+    type: "article",
+  },
+  twitter: {
+    title: "About ClearBox",
+    description: ABOUT_DESCRIPTION,
+  },
 };
 
 const VALUES = [

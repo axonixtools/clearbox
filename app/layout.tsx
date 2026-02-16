@@ -24,6 +24,14 @@ const spaceGrotesk = Space_Grotesk({
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://clear-box.netlify.app";
 const APP_BASE_URL = new URL(APP_URL);
+const SITE_NAME = "ClearBox";
+const DEFAULT_TITLE = "ClearBox | AI Inbox Cleaner for Gmail";
+const DEFAULT_DESCRIPTION =
+  "Clean unread Gmail at scale with AI triage, bulk actions, and a privacy-first workflow.";
+const SOCIAL_IMAGE_ALT = "ClearBox social preview image";
+const SOCIAL_IMAGE_VERSION = "20260216";
+const OPEN_GRAPH_IMAGE_URL = `${APP_URL}/opengraph-image?v=${SOCIAL_IMAGE_VERSION}`;
+const TWITTER_IMAGE_URL = `${APP_URL}/twitter-image?v=${SOCIAL_IMAGE_VERSION}`;
 const GOOGLE_TAG_ID = "G-6307QD91HZ";
 const GOOGLE_TAG_ADDITIONAL_ID = "G-FB0284P4PL";
 
@@ -35,27 +43,25 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: APP_BASE_URL,
+  applicationName: SITE_NAME,
   title: {
-    default: "ClearBox - Elite Email Cleaning and Inbox Zero Tool",
+    default: DEFAULT_TITLE,
     template: "%s | ClearBox",
   },
-  description:
-    "The professional AI-powered tool to roast your inbox and clear unwanted emails. Achieve Inbox Zero in minutes. Secure, private, and efficient email management.",
+  description: DEFAULT_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
   keywords: [
-    "inbox zero",
-    "email cleaner",
-    "unsubscribe tool",
-    "gmail cleaner",
-    "email management software",
-    "bulk unsubscribe",
-    "secure email tool",
-    "privacy focused email cleaner",
+    "Gmail cleaner",
+    "inbox cleanup",
     "AI email assistant",
-    "reduce email clutter",
+    "bulk archive Gmail",
+    "inbox zero tool",
   ],
-  authors: [{ name: "ClearBox Team", url: APP_URL }],
-  creator: "ClearBox Team",
-  publisher: "ClearBox Inc.",
+  authors: [{ name: SITE_NAME, url: APP_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
   robots: {
     index: true,
     follow: true,
@@ -68,29 +74,33 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "ClearBox - Elite Email Cleaning and Inbox Zero Tool",
-    description:
-      "Transform your inbox with ClearBox. The secure, AI-driven solution for bulk unsubscribing and achieving Inbox Zero.",
-    url: APP_URL,
-    siteName: "ClearBox",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    url: "/",
+    siteName: SITE_NAME,
     locale: "en_US",
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: OPEN_GRAPH_IMAGE_URL,
         width: 1200,
         height: 630,
-        alt: "ClearBox Dashboard Preview",
+        alt: SOCIAL_IMAGE_ALT,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ClearBox - Elite Email Cleaning and Inbox Zero Tool",
-    description:
-      "Transform your inbox with ClearBox. The secure, AI-driven solution for bulk unsubscribing and achieving Inbox Zero.",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    site: "@axonixtools",
     creator: "@axonixtools",
-    images: ["/og-image.png"],
+    images: [
+      {
+        url: TWITTER_IMAGE_URL,
+        alt: SOCIAL_IMAGE_ALT,
+      },
+    ],
   },
   icons: {
     icon: "/favicon.svg",
@@ -107,27 +117,34 @@ export default function RootLayout({
 }>) {
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "ClearBox",
-    applicationCategory: "ProductivityApplication",
-    operatingSystem: "Web",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
-    description:
-      "A secure, AI-powered tool to help users clean their email inboxes and unsubscribe from unwanted newsletters.",
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      ratingCount: "1250",
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "ClearBox Inc.",
-      url: APP_URL,
-    },
+    "@graph": [
+      {
+        "@type": "Organization",
+        name: SITE_NAME,
+        url: APP_URL,
+        logo: `${APP_URL}/favicon.svg`,
+        sameAs: ["https://x.com/axonixtools", "https://github.com/axonixtools"],
+      },
+      {
+        "@type": "WebSite",
+        name: SITE_NAME,
+        url: APP_URL,
+        description: DEFAULT_DESCRIPTION,
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: SITE_NAME,
+        url: APP_URL,
+        applicationCategory: "ProductivityApplication",
+        operatingSystem: "Web",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+        },
+        description: DEFAULT_DESCRIPTION,
+      },
+    ],
   };
 
   return (

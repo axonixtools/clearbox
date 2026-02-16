@@ -1,12 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 import styles from "../info-pages.module.css";
 
-export const metadata = {
-  title: "Terms of Service | ClearBox",
-  description: "Review your rights and responsibilities when using ClearBox.",
+const TERMS_DESCRIPTION =
+  "Review the terms that govern access to ClearBox and responsibilities when using inbox cleanup features.";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: TERMS_DESCRIPTION,
+  alternates: {
+    canonical: "/terms",
+  },
+  openGraph: {
+    title: "ClearBox Terms of Service",
+    description: TERMS_DESCRIPTION,
+    url: "/terms",
+    type: "article",
+  },
+  twitter: {
+    title: "ClearBox Terms of Service",
+    description: TERMS_DESCRIPTION,
+  },
 };
 
 const SECTIONS = [

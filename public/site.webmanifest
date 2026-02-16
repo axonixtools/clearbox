@@ -1,7 +1,7 @@
 {
   "name": "ClearBox",
   "short_name": "ClearBox",
-  "description": "Open-source inbox cleanup and finance insight dashboard for Gmail.",
+  "description": "AI inbox cleaner for Gmail with bulk cleanup, triage, and privacy-first workflows.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f8f6",
